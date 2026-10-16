@@ -151,7 +151,7 @@ export const CONFIG = {
     receiverRender: 'canvas',      // 'canvas' | 'dom' — TV render path (comparison)
     // Google Cast Custom Receiver (runs YOUR page on the Chromecast's browser).
     // Fill appId after you register the receiver in the Cast Developer Console.
-    appId: '',                     // Cast Application ID, e.g. 'ABCD1234'
+    appId: '2724A9A7',                     // Cast Application ID, e.g. 'ABCD1234'
     namespace: 'urn:x-cast:com.bullethell.spectate', // custom message channel
   },
 
