@@ -52,7 +52,8 @@ export class DevMenu extends HTMLElement {
     h.push(`<div class="grid">
       <button id="togglePerf">Toggle perf overlay</button>
       <button id="openMP">Multiplayer…</button>
-      <button id="castTV">Cast to TV (spectator)</button></div>`);
+      <button id="castApp">Cast to Chromecast (app)</button>
+      <button id="castTV">Cast to screen (Presentation)</button></div>`);
     h.push(`<div class="grid">
       <button data-mode="gbcr" class="colmode">gbcr</button>
       <button data-mode="gbcr-naive" class="colmode">gbcr-naive</button>
@@ -149,6 +150,11 @@ export class DevMenu extends HTMLElement {
       if (!g.cast.available()) { g.toast('Presentation API not supported in this browser.'); return; }
       g.cast.onStatus = (m) => g.toast(m);
       g.cast.start();
+    });
+    this.querySelector('#castApp').addEventListener('click', () => {
+      if (!g.castSender.available()) { g.toast('Set cast.appId first (register a Cast receiver).'); return; }
+      g.castSender.onStatus = (m) => g.toast(m);
+      g.castSender.start();
     });
     this.querySelectorAll('.colmode').forEach(b => b.addEventListener('click', () => {
       g.setCollisionMode(b.dataset.mode);

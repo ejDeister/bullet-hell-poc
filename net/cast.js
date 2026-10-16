@@ -14,6 +14,7 @@
 //   3. Controller sets the answer. The data channel opens. The stream starts.
 
 import { CONFIG } from '../config.js';
+import { buildInit, buildSnapshot } from './spectator-stream.js';
 
 const b64encode = (str) => btoa(unescape(encodeURIComponent(str)));
 const b64decode = (b64) => decodeURIComponent(escape(atob(b64)));
@@ -121,14 +122,7 @@ export class SpectatorCast {
 
   // Send the dungeon seed once so the receiver builds the same walls.
   _sendInit() {
-    const g = this.game;
-    this._send({
-      t: 'init',
-      seed: CONFIG.world.seed,
-      dungeonIndex: g.dungeonIndex,
-      endless: g.endless,
-      render: CONFIG.cast.receiverRender,
-    });
+    this._send(buildInit(this.game));
     this._initSent = true;
   }
 
@@ -152,70 +146,10 @@ export class SpectatorCast {
       this._dropped = (this._dropped || 0) + 1;
       return;
     }
-    this._send(this._snapshot());
-  }
-
-  _snapshot() {
-    const g = this.game;
-    const cam = g.camera;
-
-    const players = g.players
-      .filter(p => p && !p.dead)
-      .map(p => [Math.round(p.x), Math.round(p.y), Math.round(p.hp), p.maxHp, +p.aim.toFixed(2)]);
-
-    const enemies = [];
-    for (const e of g.enemies) {
-      if (e.dead || e.isBoss) continue;
-      enemies.push([Math.round(e.x), Math.round(e.y), e.kind]);
-    }
-
-    let boss = null;
-    if (g.activeBoss && !g.activeBoss.dead) {
-      const b = g.activeBoss;
-      boss = [Math.round(b.x), Math.round(b.y), +b.hpFrac.toFixed(3), b.name || 'BOSS', b.radius];
-    }
-
-    // Bullets as a flat array: x, y, faction(0 player / 1 enemy).
-    const bullets = [];
-    if (CONFIG.cast.streamBullets) {
-      const list = g.bullets.list;
-      const max = Math.min(list.length, CONFIG.cast.maxBullets);
-      for (let i = 0; i < max; i++) {
-        const b = list[i];
-        bullets.push(Math.round(b.x), Math.round(b.y), b.faction === 'enemy' ? 1 : 0);
-      }
-    }
-
-    return {
-      t: 'snap',
-      render: CONFIG.cast.receiverRender, // let the TV switch render path live
-      cam: [Math.round(cam.x), Math.round(cam.y), cam.viewW, cam.viewH],
-      score: g.score,
-      label: g.dungeonLabel(),
-      players, enemies, boss, bullets,
-      perf: this._perfBlock(),
-    };
-  }
-
-  // Package the profiler data so the TV shows the FPS counter and the graph.
-  _perfBlock() {
-    const prof = this.game.profiler;
-    const ft = prof.frameTimes;
-    // Trim and round the frame-time samples to keep the stream small.
-    const trimmed = ft.slice(-60).map(v => Math.round(v * 10) / 10);
-    const roundObj = (o) => { const r = {}; for (const k in o) r[k] = Math.round((o[k] + Number.EPSILON) * 100) / 100; return r; };
-    return {
-      fps: Math.round(prof.fps),
-      maxSamples: prof.maxSamples,
-      stats: prof.stats(),
-      frameTimes: trimmed,
-      systems: roundObj(prof.systems),
-      counters: {
-        ...prof.counters, ...this.game._extraCounters(),
-        castDropped: this._dropped || 0,
-        castBuffered: this.channel ? this.channel.bufferedAmount : 0,
-      },
-    };
+    this._send(buildSnapshot(this.game, {
+      castDropped: this._dropped || 0,
+      castBuffered: this.channel ? this.channel.bufferedAmount : 0,
+    }));
   }
 
   stop(why = 'stopped') {

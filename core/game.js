@@ -25,6 +25,7 @@ import { Loot } from '../items/loot.js';
 import { useItem } from '../items/item.js';
 import { Netcode } from '../net/netcode.js';
 import { SpectatorCast } from '../net/cast.js';
+import { CastSender } from '../net/cast-sender.js';
 // Side-effect imports: register item descriptors.
 import '../items/health-potion.js';
 import '../items/speed-elixir.js';
@@ -67,7 +68,8 @@ export class Game {
     this.role = null;        // 'host' | 'guest' | null (single-player)
     this.localSlot = 0;      // which players[] index the local input drives
     this._interpRate = 12;   // interpolation smoothing rate (1/sec)
-    this.cast = new SpectatorCast(this); // spectator cast to a TV (experimental)
+    this.cast = new SpectatorCast(this);     // Presentation cast (second screen)
+    this.castSender = new CastSender(this);  // Cast Custom Receiver (Chromecast)
 
     this._toastText = '';
     this._toastTimer = 0;
@@ -263,6 +265,7 @@ export class Game {
 
     // Spectator cast stream (experimental). Streams state + perf to a TV.
     if (this.cast && this.cast.active) { prof.begin('cast'); this.cast.tick(dt); prof.end('cast'); }
+    if (this.castSender && this.castSender.active) { prof.begin('cast'); this.castSender.tick(dt); prof.end('cast'); }
 
     // Toast timer + dataset flush.
     if (this._toastTimer > 0) { this._toastTimer -= dt; if (this._toastTimer <= 0) this._toastText = ''; }

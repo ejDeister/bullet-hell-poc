@@ -149,6 +149,10 @@ export const CONFIG = {
     maxBullets: 1500,              // cap bullets sent per snapshot (bandwidth)
     stunServers: ['stun:stun.l.google.com:19302'],
     receiverRender: 'canvas',      // 'canvas' | 'dom' — TV render path (comparison)
+    // Google Cast Custom Receiver (runs YOUR page on the Chromecast's browser).
+    // Fill appId after you register the receiver in the Cast Developer Console.
+    appId: '',                     // Cast Application ID, e.g. 'ABCD1234'
+    namespace: 'urn:x-cast:com.bullethell.spectate', // custom message channel
   },
 
   audio: {

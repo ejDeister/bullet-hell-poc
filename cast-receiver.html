@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bullet Hell — Cast Receiver</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #05060d; }
+    body { font-family: ui-monospace, Menlo, monospace; color: #cfe; }
+    #stage { position: fixed; inset: 0; }
+    #spectator { display: block; width: 100%; height: 100%; background:
+      radial-gradient(1400px 900px at 50% 45%, #0c1024, #05060d 80%); }
+    #status { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      font-size: 22px; color: #9ab; text-align: center; max-width: 80%; }
+    #banner { position: fixed; left: 16px; bottom: 14px; z-index: 20; font-size: 20px;
+      color: #ffd86b; text-shadow: 0 2px 4px #000; }
+    #score { position: fixed; right: 16px; bottom: 14px; z-index: 20; font-size: 20px; }
+  </style>
+  <!-- The Cast Application Framework receiver SDK runs this page on the device. -->
+  <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
+</head>
+<body>
+  <div id="stage"><canvas id="spectator"></canvas></div>
+  <div id="status">Waiting for the host...</div>
+  <div id="banner"></div>
+  <div id="score"></div>
+  <script type="module" src="./net/cast-receiver.js"></script>
+</body>
+</html>
