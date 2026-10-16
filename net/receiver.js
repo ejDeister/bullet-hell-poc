@@ -64,6 +64,18 @@ function bindConnection(conn) {
   conn.addEventListener('message', (e) => onSignal(conn, e.data));
   conn.addEventListener('close', () => setStatus('Host closed the connection.'));
   conn.addEventListener('terminate', () => setStatus('Cast ended.'));
+  // Tell the host the TV is listening, so the host sends the offer now. This
+  // removes the race where the host sends before the TV page is ready.
+  sendReady(conn);
+}
+
+function sendReady(conn) {
+  const ping = () => { try { conn.send(b64encode(JSON.stringify({ type: 'ready' }))); } catch (e) {} };
+  if (conn.state === 'connected' || conn.state === undefined) ping();
+  conn.addEventListener('connect', ping);
+  // Send a few times in case the first is dropped during connect.
+  let n = 0;
+  const t = setInterval(() => { ping(); if (++n >= 5) clearInterval(t); }, 400);
 }
 
 async function onSignal(conn, data) {

@@ -44,9 +44,14 @@ export class SpectatorCast {
       this.request = new PresentationRequest([CONFIG.cast.receiverPath]);
       this._status('Choose a screen to cast to...');
       this.connection = await this.request.start();
-      this._status('Screen connected. Opening WebRTC...');
+      this._status('Screen connected. Waiting for the TV to load...');
+      this._offered = false;
       this._bindConnection(this.connection);
-      await this._makeOffer();
+      // The TV sends 'ready' once it listens. The host then sends the offer.
+      // A fallback timer covers a TV that does not send 'ready'.
+      this._readyTimer = setTimeout(() => {
+        if (!this._offered) { this._status('No ready signal. Sending offer anyway...'); this._makeOffer(); }
+      }, 2500);
     } catch (e) {
       this._status('Cast failed: ' + e.message);
     }
@@ -82,6 +87,9 @@ export class SpectatorCast {
   }
 
   async _makeOffer() {
+    if (this._offered) return;      // send the offer once
+    this._offered = true;
+    clearTimeout(this._readyTimer);
     this._mkPeer();
     const offer = await this.pc.createOffer();
     await this.pc.setLocalDescription(offer);
@@ -94,7 +102,11 @@ export class SpectatorCast {
   async _onSignal(data) {
     let msg;
     try { msg = JSON.parse(b64decode(data)); } catch { return; }
-    if (msg.type === 'answer') {
+    if (msg.type === 'ready') {
+      // The TV is listening. Send the offer now (race-free).
+      this._status('TV ready. Sending offer...');
+      this._makeOffer();
+    } else if (msg.type === 'answer') {
       await this.pc.setRemoteDescription({ type: 'answer', sdp: msg.sdp });
       this._status('Answer set. Connecting the spectator stream...');
     }
