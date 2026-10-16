@@ -146,6 +146,12 @@ export class SpectatorCast {
     const interval = 1000 / CONFIG.cast.tickRate;
     if (this._acc < interval) return;
     this._acc = 0;
+    // Backpressure: skip this snapshot if the channel is still draining. This
+    // stops the queue from growing, which is what causes the latency to climb.
+    if (this.channel && this.channel.bufferedAmount > 65536) {
+      this._dropped = (this._dropped || 0) + 1;
+      return;
+    }
     this._send(this._snapshot());
   }
 
@@ -196,7 +202,7 @@ export class SpectatorCast {
     const prof = this.game.profiler;
     const ft = prof.frameTimes;
     // Trim and round the frame-time samples to keep the stream small.
-    const trimmed = ft.slice(-120).map(v => Math.round(v * 10) / 10);
+    const trimmed = ft.slice(-60).map(v => Math.round(v * 10) / 10);
     const roundObj = (o) => { const r = {}; for (const k in o) r[k] = Math.round((o[k] + Number.EPSILON) * 100) / 100; return r; };
     return {
       fps: Math.round(prof.fps),
@@ -204,7 +210,11 @@ export class SpectatorCast {
       stats: prof.stats(),
       frameTimes: trimmed,
       systems: roundObj(prof.systems),
-      counters: { ...prof.counters, ...this.game._extraCounters() },
+      counters: {
+        ...prof.counters, ...this.game._extraCounters(),
+        castDropped: this._dropped || 0,
+        castBuffered: this.channel ? this.channel.bufferedAmount : 0,
+      },
     };
   }
 

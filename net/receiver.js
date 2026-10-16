@@ -301,9 +301,28 @@ const domRenderer = {
   },
 };
 
+// ---- local FPS measurement (the TV's own render rate) ------------------
+const localFt = [];           // the TV's frame times (ms)
+let localFps = 0, _frames = 0, _fpsClock = performance.now(), _lastFrame = performance.now();
+
+function measureFrame() {
+  const now = performance.now();
+  const d = now - _lastFrame; _lastFrame = now;
+  localFt.push(d); if (localFt.length > 120) localFt.shift();
+  _frames++;
+  if (now - _fpsClock >= 500) { localFps = (_frames * 1000) / (now - _fpsClock); _frames = 0; _fpsClock = now; }
+}
+function localStats() {
+  if (!localFt.length) return { avg: 0, p95: 0, max: 0 };
+  const s = [...localFt].sort((a, b) => a - b);
+  const avg = localFt.reduce((a, b) => a + b, 0) / localFt.length;
+  return { avg, p95: s[Math.floor(s.length * 0.95)] || s[s.length - 1], max: s[s.length - 1] };
+}
+
 // ---- main render loop --------------------------------------------------
 function render() {
   requestAnimationFrame(render);
+  measureFrame();
   const w = canvas.width, h = canvas.height;
   if (mode === 'canvas') canvasRenderer.draw(w, h);
   else domRenderer.draw(window.innerWidth, window.innerHeight);
@@ -311,18 +330,24 @@ function render() {
   if (snap) {
     bannerEl.textContent = (snap.label || '') + '  [' + mode + ']';
     scoreEl.textContent = 'Score ' + snap.score;
-    if (snap.perf) perf.render(makeProf(snap.perf), { render: mode });
+    // Show the TV's OWN fps and frame-time graph. Keep the host data as
+    // counters, so both numbers are visible and not confused.
+    perf.render(makeLocalProf(snap.perf), { render: mode });
   }
 }
 
-function makeProf(p) {
+function makeLocalProf(hostPerf) {
+  const h = hostPerf || {};
+  const counters = { ...(h.counters || {}) };
+  counters.TVrender = mode;
+  counters.hostFps = h.fps != null ? h.fps : '—';
   return {
-    fps: p.fps,
-    maxSamples: p.maxSamples || 120,
-    frameTimes: p.frameTimes || [],
-    systems: p.systems || {},
-    counters: p.counters || {},
-    stats: () => p.stats || { avg: 0, p95: 0, max: 0 },
+    fps: Math.round(localFps),              // the TV's real fps
+    maxSamples: 120,
+    frameTimes: localFt,                     // the TV's real frame times
+    systems: h.systems || {},                // host per-system timings (context)
+    counters,
+    stats: () => localStats(),
   };
 }
 
