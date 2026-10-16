@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Bullet Hell PoC</title>
+  <!-- Minimal reset/layout stylesheet. All entity/UI styles are injected per
+       class by each module (ensureStyles). This is the only global CSS. -->
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #05060d; }
+    body { font-family: ui-monospace, Menlo, monospace; color: #cfe; cursor: crosshair; }
+
+    /* The viewport clips the world; #world is the single camera transform. */
+    #viewport {
+      position: fixed; inset: 0; overflow: hidden;
+      background:
+        radial-gradient(1200px 800px at 50% 40%, #0c1024, #05060d 80%);
+    }
+    #world {
+      position: absolute; left: 0; top: 0; width: 0; height: 0;
+      will-change: transform;
+      /* contain layout so entity writes do not escape this subtree */
+      contain: layout style;
+    }
+    #world > div { position: absolute; left: 0; top: 0; }
+    .bullet-layer { z-index: 3; }
+    .entity-layer { z-index: 2; }
+    .fx-layer { z-index: 1; }
+    .wall-layer { z-index: 0; }
+
+    #help {
+      position: fixed; left: 50%; bottom: 8px; transform: translateX(-50%);
+      z-index: 30; font-size: 11px; color: #567; pointer-events: none; text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="viewport">
+    <div id="world"></div>
+  </div>
+  <div id="help">
+    WASD move · mouse aim · click fire · Shift sprint · Space dash · Q/E item · F use · 1-4 weapon · ~ dev menu · P perf
+  </div>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
